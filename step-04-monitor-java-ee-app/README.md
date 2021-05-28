@@ -7,197 +7,35 @@ Azure Monitor - Log Analytics and Application Insights.
 
 ---
 
-## Create and configure Log Analytics Workspace
+## Enable application monitoring directly from Azure Portal
 
-Create a Log Analytics Workspace using Azure CLI:
+When you enable application monitoring, a Log Analytics workspace will also be automatically created for you unless you already have a different workspace that you prefer to use.
 
-```bash
-az monitor log-analytics workspace create \
-    --workspace-name ${LOG_ANALYTICS} \
-    --resource-group ${RESOURCE_GROUP} \
-    --location ${REGION}                                       
+### Turn on Application Insights
 
-export LOG_ANALYTICS_RESOURCE_ID=$(az monitor log-analytics workspace show \
-    --resource-group ${RESOURCE_GROUP} \
-    --workspace-name ${LOG_ANALYTICS} | jq -r '.id')
-    
-export WEBAPP_RESOURCE_ID=$(az webapp show --name ${WEBAPP} --resource-group ${RESOURCE_GROUP} | jq -r '.id')
-```
+Open your App Service resource in Azure portal. Click Applcation Insigths.
 
-Setup diagnostics and publish logs and metrics from Java EE application to Azure Monitor:
-```bash
-az monitor diagnostic-settings create --name "send-logs-and-metrics-to-log-analytics" \
-    --resource ${WEBAPP_RESOURCE_ID} \
-    --workspace ${LOG_ANALYTICS_RESOURCE_ID} \
-    --logs '[
-         {
-           "category": "AppServiceHTTPLogs",
-           "enabled": true,
-           "retentionPolicy": {
-             "enabled": false,
-             "days": 0
-           }
-         },
-         {
-            "category": "AppServiceConsoleLogs",
-            "enabled": true,
-            "retentionPolicy": {
-              "enabled": false,
-              "days": 0
-            }
-          },
-         {
-            "category": "AppServiceAppLogs",
-            "enabled": true,
-            "retentionPolicy": {
-              "enabled": false,
-              "days": 0
-            }
-          },
-         {
-            "category": "AppServiceFileAuditLogs",
-            "enabled": true,
-            "retentionPolicy": {
-              "enabled": false,
-              "days": 0
-            }
-          },
-          {
-             "category": "AppServiceAuditLogs",
-             "enabled": true,
-             "retentionPolicy": {
-               "enabled": false,
-               "days": 0
-             }
-           },
-          {
-             "category": "AppServiceIPSecAuditLogs",
-             "enabled": true,
-             "retentionPolicy": {
-               "enabled": false,
-               "days": 0
-             }
-           },
-          {
-             "category": "AppServicePlatformLogs",
-             "enabled": true,
-             "retentionPolicy": {
-               "enabled": false,
-               "days": 0
-             }
-           }         
-       ]' \
-       --metrics '[
-         {
-           "category": "AllMetrics",
-           "enabled": true,
-           "retentionPolicy": {
-             "enabled": false,
-             "days": 0
-           }
-         }
-       ]'
-```
+![](./media/app-service-ai-menu-sh.png)
 
-## Create and configure Application Insights
+Click 'Turn on Application Insights'
 
-Add Azure CLI extension for Application Insights:
-```bash
-az extension add --name application-insights
-```
-
-Create Application Insights using Azure CLI and retrieve the `InstrumentationKey`:
-```bash
-az monitor app-insights component create --app ${APPLICATION_INSIGHTS} \
-    --workspace ${LOG_ANALYTICS_RESOURCE_ID} \
-    --location ${REGION} \
-    --resource-group ${RESOURCE_GROUP}
+![](./media/app-service-enable-ai-sh.png)
 
 
-export APPLICATIONINSIGHTS_CONNECTION_STRING=InstrumentationKey=$(az monitor \
-    app-insights component show --app ${APPLICATION_INSIGHTS} \
-    --resource-group ${RESOURCE_GROUP} | jq -r '.instrumentationKey')
-```
+Under 'Java' tab, you can [configure](https://docs.microsoft.com/azure/azure-monitor/app/java-standalone-config) your Application Insights - just paste the whole configuration file into the text box, leave out the configuration string though - see an example [here](https://docs.microsoft.com/azure/azure-monitor/app/java-standalone-config#an-example).
 
-Download Application Insights Java in-process agent:
-```bash
-mkdir apm
-cd apm
-wget https://github.com/microsoft/ApplicationInsights-Java/releases/download/3.0.0/applicationinsights-agent-3.0.0.jar
-```
+![](./media/app-service-configure-ai-sh.png)
 
-Upload Application Insights Java in-process agent to App Service Linux instance:
-```text
-ftp
-ftp> open waws-prod-bay-139.ftp.azurewebsites.windows.net
-Connected to waws-prod-bay-139.drip.azurewebsites.windows.net.
-220 Microsoft FTP Service
-Name (waws-prod-bay-139.ftp.azurewebsites.windows.net:selvasingh): seattle-petstore\\$seattle-petstore
-331 Password required
-Password: 
-230 User logged in.
-ftp> cd site/deployments/tools
-250 CWD command successful.
-ftp> bin
-200 Type set to I.
-ftp> put applicationinsights-agent-3.0.0.jar 
-200 PORT command successful.
-125 Data connection already open; Transfer starting.
-226 Transfer complete.
-17857000 bytes sent in 9.86 seconds (1.73 Mbytes/s)
-ftp> quit
-221 Goodbye.
-```
+After clicking 'Apply' you can go to your Application Insights resource and see your telemetry starting to show up.
 
-Configure the Java EE application to start the Application Insights Java in-process agent:
-```bash
-az webapp config appsettings set \
-    --resource-group ${RESOURCE_GROUP} --name ${WEBAPP} \
-    --settings \
-    JAVA_OPTS="-javaagent:/home/site/deployments/tools/applicationinsights-agent-3.0.0.jar" \
-    APPLICATIONINSIGHTS_CONNECTION_STRING=${APPLICATIONINSIGHTS_CONNECTION_STRING} \
-    APPLICATIONINSIGHTS_ROLE_NAME=${WEBAPP}
- 
-az webapp stop -g ${RESOURCE_GROUP} -n ${WEBAPP}
-az webapp start -g ${RESOURCE_GROUP} -n ${WEBAPP}
-```
+![](./media/app-service-view-ai-sh.png)
 
->🚧 - __Preview-specific__. Downloading, installing and engaging the Application Insights Java
-in-process agent is only necessary while JBoss EAP on App Service is in preview. Soon, the agent
-will be pre-installed and auto-engaged as part of code-less attach feature.
+Live metrics is the bext place to start, you will see your telemetry in real time. For other useful views - performance, transactions, and more, give it a few minutes before everything falls into the right places.
 
-## Use Java EE application and make few REST API calls
-
-Open the Java EE application running on JBoss EAP in App Service Linux:
-```bash
-open https://${WEBAPP}.azurewebsites.net
-```
-![](../step-01-deploy-java-ee-app-to-azure/media/YAPS-PetStore-H2.jpg)
-
-You can also `curl` the REST API exposed by the Java EE application. The admin REST 
-API allows you to create/update/remove items in the catalog, orders or customers. 
-You can run the following curl commands:
-```bash
-curl -X GET https://${WEBAPP}.azurewebsites.net/rest/categories
-curl -X GET https://${WEBAPP}.azurewebsites.net/rest/products
-curl -X GET https://${WEBAPP}.azurewebsites.net/rest/items
-curl -X GET https://${WEBAPP}.azurewebsites.net/rest/countries
-curl -X GET https://${WEBAPP}.azurewebsites.net/rest/customers
-```
-
-You can also get a JSON representation:
-```bash
-curl -X GET -H "accept: application/json" https://${WEBAPP}.azurewebsites.net/rest/items
-```
-
-Check the Java EE application's Swagger contract:
-```bash
-curl -X GET https://${WEBAPP}.azurewebsites.net/swagger.json
-```
 
 ## Monitor Java EE application
 
-Go to Log Analytics and navigate to the `Logs` blade. 
+Navigate to the `Logs` blade. 
 Type and run the following Kusto query to see application performance by operations:
 ```sql
 // Operations performance 
@@ -216,7 +54,7 @@ AppServiceConsoleLogs
 ```
 ![](./media/seattle-petstore-app-logs-in-log-analytics.jpg)
 
-Go to Application Insights and navigate to the `Performance` blade. You can
+Navigate to the `Performance` blade. You can
 see application operation performance:
 ![](./media/seattle-petstore-performance.jpg)
 
