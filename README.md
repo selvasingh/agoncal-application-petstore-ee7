@@ -1,7 +1,15 @@
 ---
-services: app-service, PostgreSQL, MySQL, azure-sql-database
-platforms: java
-author: selvasingh, sadigopu
+page_type: sample
+languages: 
+- java
+products: 
+- app-service
+- PostgreSQL
+- MySQL
+- azure-sql-database
+- Application-Insights
+description: "Migrate Java EE apps to Azure"
+urlFragment: "migrate-javaee-app-to-azure-training"
 ---
 
 # Migrate Java EE App to Azure
@@ -95,6 +103,21 @@ This Java EE Petstore sample is forked from
 > Thank you,
 > 
 > [Antonio Goncalves](http://www.antoniogoncalves.org)
+
+## Contributors
+
+Thank you and congratulations to many contributors for making this training repo available 
+millions of Java developers:
+
+- [Antonio Goncalves](https://github.com/agoncal)
+- [Asir Selvasingh](https://github.com/selvasingh)
+- [Sree Adigopula](https://github.com/sadigopu)
+- [Jason Freeberg](https://github.com/JasonFreeberg)
+- [Joaquin Vano](https://github.com/jvano)
+- [Julia Goloshubina](https://github.com/MS-jgol)
+- [Yuchen Wang](https://github.com/yucwan)
+- [Andy Xu](https://github.com/andxu)
+- [Shrirang Shirodhkar](https://github.com/ShriShrirang)
 
 ## Contributing
 

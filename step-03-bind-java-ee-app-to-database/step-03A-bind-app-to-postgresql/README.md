@@ -8,7 +8,7 @@ Bind the application to the petstore database in Azure Database for PostgreSQL.
 
 ## Configure PostgreSQL Data Source
 
-There are 4 steps to configure a data source. These steps are similar to configuring data sources
+There are 3 steps to configure a data source. These steps are similar to configuring data sources
 in any on premise Java EE app servers:
 
 ### Step 1: Understand how to configure JBoss EAP
@@ -141,15 +141,6 @@ az webapp config appsettings set \
    "value": "postgres@petstore-db"
  }
 ]
-```
-
-### Step 4: Restart the remote JBoss EAP app server
-
-Use Azure CLI to restart the remote JBoss EAP app server:
-
-```bash
-az webapp stop -g ${RESOURCE_GROUP} -n ${WEBAPP}
-az webapp start -g ${RESOURCE_GROUP} -n ${WEBAPP}
 ```
 
 For additional info, please refer to:
